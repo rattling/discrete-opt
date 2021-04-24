@@ -17,51 +17,35 @@ def loop_options():
     return options
 
 
-def brute_force(taken, items, capacity):
-    n = len(taken)
-    perms = np.zeros(1, n)
-    for i in range (0, n-1):
-        tmp = np.copy(perms)
-        tmp[:i] = 1
-        perms = np.append(perms, tmp, axis = 0)
-    
-    print(perms)
+def solve_brutish(file_location):
+    t = np.loadtxt(file_location, dtype=int)
 
-
+    capacity = t[0,1]
+    n = t[0,0]
 
     ##generate sequence of zeros of length n: s
-    ##generate table of options
-    #for i = 1: n:
-        #copy s
-        #i col = 1
-        #append to s
-    #multiply the binaries by their weights/values to get and weight/value total per rows
-    #get row with max value where max weight >= capacity
-    #if not already, convert it to a list and return it along with total weight and value for it
-
-    #return taken, value, weight
-
-def naive(taken, items, capacity):
-
-    # a trivial algorithm for filling the knapsack
-    # it takes items in-order until the knapsack is full
-
-    value = 0
-    weight = 0
-
-    for item in items:
-        if weight + item.weight <= capacity:
-            taken[item.index] = 1
-            value += item.value
-            weight += item.weight
-
-    return taken, value, weight
+    perms = np.zeros((1, n), dtype=int)
+    for i in range (0, n):
+        tmp = np.copy(perms) #copy existing matrix
+        tmp[:,i] = 1 # set value of column i to 1
+        perms = np.append(perms, tmp, axis = 0) # append to existing matrix
+    
+    value = t[1:,].transpose()[0:,][0] #get value item
+    weight = t[1:,].transpose()[1:,][0] #get weight item
+    option_value = np.sum((value * perms), axis=1) # get value per permutation
+    option_weight = np.sum((weight * perms), axis=1) # get weight per permutation
+    ok = np.where(option_weight <= capacity) # get valid permutations
+    value = option_value[ok].max() # get valid permutation with max value
+    answer = perms[np.where(option_value==value)][0] #this is the silly one, need to match on value as we dont have index
+    
+    return ' '.join(map(str, answer)) #np.array2string(answer)
 
 
-
-
-def solve_it(input_data):
+def solve_naive(file_location):
     # Modify this code to run your optimization algorithm
+
+    with open(file_location, 'r') as input_data_file:
+        input_data = input_data_file.read()
 
     # parse the input
     lines = input_data.split('\n')
@@ -79,9 +63,14 @@ def solve_it(input_data):
  
     taken = [0]*len(items)
 
-    taken, value, weight = naive(taken, items, capacity)
+    value = 0
+    weight = 0
 
-    brute_force(taken, items, capacity)
+    for item in items:
+        if weight + item.weight <= capacity:
+            taken[item.index] = 1
+            value += item.value
+            weight += item.weight
     
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(0) + '\n'
@@ -90,13 +79,15 @@ def solve_it(input_data):
 
 
 if __name__ == '__main__':
+
+    options = ['naive', 'brutish']
+    choose = 1
     import sys
     if len(sys.argv) > 0:
         #file_location = sys.argv[1].strip()
         file_location = "/data/repos/discrete-opt/coursera-course/knapsack/data/ks_4_0"
-        with open(file_location, 'r') as input_data_file:
-            input_data = input_data_file.read()
-        print(solve_it(input_data))
+
+        print(globals()['solve_' + options[choose]](file_location))    
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/ks_4_0)')
 
